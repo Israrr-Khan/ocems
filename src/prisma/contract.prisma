@@ -1,0 +1,57 @@
+// use prisma-8
+
+model Plant {
+  id          Int      @id @default(autoincrement())
+  name        String
+  location    String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt temporal.updatedAt()
+  
+
+  sensors     Sensor[]
+  telemetry   Telemetry[]
+  alerts      Alert[]
+}
+
+model Sensor {
+  id          Int      @id @default(autoincrement())
+  plantId     Int
+  name        String
+  type        String
+  unit        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  plant       Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  telemetry   Telemetry[]
+}
+
+model Telemetry {
+  id          BigInt   @id @default(autoincrement())
+  plantId     Int
+  sensorId    Int
+  value       Float
+  recordedAt  DateTime @default(now())
+
+  plant       Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  sensor      Sensor   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@index([plantId, recordedAt])
+  @@index([sensorId, recordedAt])
+}
+
+model Alert {
+  id          BigInt   @id @default(autoincrement())
+  plantId     Int
+  type        String
+  severity    String
+  message     String
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  plant       Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@index([plantId, createdAt])
+}
