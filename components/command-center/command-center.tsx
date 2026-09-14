@@ -1,19 +1,76 @@
-import { TELEMETRY } from "@/lib/mock-telemetry";
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { TELEMETRY, type TelemetryMetric } from "@/lib/mock-telemetry";
 import { PlantSchematic } from "@/components/command-center/plant-schematic";
 import { RecentAlerts } from "@/components/command-center/recent-alerts";
 import { RiskScorePanel } from "@/components/command-center/risk-score-panel";
 import { TelemetryCard } from "@/components/command-center/telemetry-card";
 import { AIAnalysis } from "@/components/command-center/ai-analysis";
 
+type LatestTelemetry = {
+  ph?: number;
+  bod?: number;
+  tds?: number;
+  flow?: number;
+  temperature?: number;
+  production?: number;
+};
+
 export function CommandCenter() {
-  const primaryTelemetry = TELEMETRY.slice(0, 6);
+  const [telemetry, setTelemetry] = useState<LatestTelemetry>({});
+  const [primaryTelemetry, setPrimaryTelemetry] =
+    useState<TelemetryMetric[]>(TELEMETRY.slice(0, 6));
+
+  useEffect(() => {
+    async function loadTelemetry() {
+      try {
+        const response = await fetch("/api/telemetry/latest");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch telemetry");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          setTelemetry(result.data);
+        }
+      } catch (error) {
+        console.error("Frontend telemetry error:", error);
+      }
+    }
+
+    loadTelemetry();
+
+    const interval = setInterval(loadTelemetry, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    setPrimaryTelemetry(
+      TELEMETRY.slice(0, 6).map((metric) => {
+        const value = telemetry[metric.id as keyof LatestTelemetry];
+
+        if (typeof value !== "number") {
+          return metric;
+        }
+
+        return {
+          ...metric,
+          value:
+            metric.id === "tds"
+              ? value.toLocaleString()
+              : String(value),
+        };
+      })
+    );
+  }, [telemetry]);
 
   return (
     <div className="mx-auto w-full max-w-[1900px]">
-
-      {/* =====================================================
-          MAIN DASHBOARD
-      ===================================================== */}
 
       <div
         className="
@@ -26,15 +83,7 @@ export function CommandCenter() {
         "
       >
 
-        {/* ===================================================
-            LEFT SIDE
-        =================================================== */}
-
         <main className="min-w-0 space-y-3">
-
-          {/* -------------------------------------------------
-              TELEMETRY
-          ------------------------------------------------- */}
 
           <section aria-label="Primary telemetry">
 
@@ -59,11 +108,6 @@ export function CommandCenter() {
 
           </section>
 
-
-          {/* -------------------------------------------------
-              PLANT SCHEMATIC
-          ------------------------------------------------- */}
-
           <section aria-label="Plant schematic">
 
             <PlantSchematic />
@@ -72,30 +116,20 @@ export function CommandCenter() {
 
         </main>
 
-
-        {/* ===================================================
-            RIGHT SIDE INTELLIGENCE COLUMN
-        =================================================== */}
-
-<aside
-  aria-label="AI intelligence"
-  className="
-    min-w-0
-    self-stretch
-    xl:sticky
-    xl:top-3
-    xl:h-[calc(100vh-115px)]
-  "
->
-  <AIAnalysis />
-</aside>
+        <aside
+          aria-label="AI intelligence"
+          className="
+            min-w-0
+            self-stretch
+            xl:sticky
+            xl:top-3
+            xl:h-[calc(100vh-115px)]
+          "
+        >
+          <AIAnalysis />
+        </aside>
 
       </div>
-
-
-      {/* =====================================================
-          SECONDARY PANELS
-      ===================================================== */}
 
       <section
         aria-label="Risk and recent alerts"
