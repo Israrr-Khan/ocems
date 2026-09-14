@@ -39,8 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+<<<<<<< HEAD
 
 # Python ML service
 .venv/
 __pycache__/
 *.py[cod]
+=======
+node_modules/
+dist/
+.env
+>>>>>>> 1e9fbb6 (Complete database and core backend APIs)
